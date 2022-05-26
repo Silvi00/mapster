@@ -108,36 +108,36 @@ public struct GeoFeature : BaseShape
     public GeoFeature(ReadOnlySpan<Coordinate> c, MapFeatureData feature)
     {
         IsPolygon = feature.Type == GeometryType.Polygon;
-        var naturalKey = feature.Properties.FirstOrDefault(x => x.Key == "natural").Value;
+        var naturalKey = feature.Properties.FirstOrDefault(x => x.Key == MapElement.natural).Value;
         Type = GeoFeatureType.Unknown;
         if (naturalKey != null)
         {
-            if (naturalKey == "fell" ||
-                naturalKey == "grassland" ||
-                naturalKey == "heath" ||
-                naturalKey == "moor" ||
-                naturalKey == "scrub" ||
-                naturalKey == "wetland")
+            if (naturalKey == PropertyValue.fell ||
+                naturalKey == PropertyValue.grassland||
+                naturalKey == PropertyValue.heath ||
+                naturalKey == PropertyValue.moor ||
+                naturalKey == PropertyValue.scrub ||
+                naturalKey == PropertyValue.wetland)
             {
                 Type = GeoFeatureType.Plain;
             }
-            else if (naturalKey == "wood" ||
-                     naturalKey == "tree_row")
+            else if (naturalKey == PropertyValue.wood ||
+                     naturalKey == PropertyValue.tree_row)
             {
                 Type = GeoFeatureType.Forest;
             }
-            else if (naturalKey == "bare_rock" ||
-                     naturalKey == "rock" ||
-                     naturalKey == "scree")
+            else if (naturalKey == PropertyValue.bare_rock ||
+                     naturalKey == PropertyValue.rock ||
+                     naturalKey == PropertyValue.scree)
             {
                 Type = GeoFeatureType.Mountains;
             }
-            else if (naturalKey == "beach" ||
-                     naturalKey == "sand")
+            else if (naturalKey == PropertyValue.beach ||
+                     naturalKey == PropertyValue.sand)
             {
                 Type = GeoFeatureType.Desert;
             }
-            else if (naturalKey == "water")
+            else if (naturalKey == PropertyValue.water)
             {
                 Type = GeoFeatureType.Water;
             }
@@ -202,7 +202,7 @@ public struct PopulatedPlace : BaseShape
         for (var i = 0; i < c.Length; i++)
             ScreenCoordinates[i] = new PointF((float)MercatorProjection.lonToX(c[i].Longitude),
                 (float)MercatorProjection.latToY(c[i].Latitude));
-        var name = feature.Properties.FirstOrDefault(x => x.Key == "name").Value;
+        var name = feature.Properties.FirstOrDefault(x => x.Key == MapElement.name).Value;
 
         if (feature.Label.IsEmpty)
         {
@@ -211,7 +211,7 @@ public struct PopulatedPlace : BaseShape
         }
         else
         {
-            Name = string.IsNullOrWhiteSpace(name) ? feature.Label.ToString() : name;
+            Name = string.IsNullOrWhiteSpace(name.ToString()) ? feature.Label.ToString() : name.ToString();
             ShouldRender = true;
         }
     }
@@ -224,10 +224,10 @@ public struct PopulatedPlace : BaseShape
             return false;
         }
         foreach (var entry in feature.Properties)
-            if (entry.Key.StartsWith("place"))
+            if (entry.Key == MapElement.place)
             {
-                if (entry.Value.StartsWith("city") || entry.Value.StartsWith("town") ||
-                    entry.Value.StartsWith("locality") || entry.Value.StartsWith("hamlet"))
+                if (entry.Value == PropertyValue.city || entry.Value == PropertyValue.town ||
+                    entry.Value == PropertyValue.locality || entry.Value == PropertyValue.hamlet)
                 {
                     return true;
                 }
@@ -264,11 +264,11 @@ public struct Border : BaseShape
         var foundLevel = false;
         foreach (var entry in feature.Properties)
         {
-            if (entry.Key.StartsWith("boundary") && entry.Value.StartsWith("administrative"))
+            if (entry.Key == MapElement.boundary && entry.Value == PropertyValue.administrative)
             {
                 foundBoundary = true;
             }
-            if (entry.Key.StartsWith("admin_level") && entry.Value == "2")
+            if (entry.Key == MapElement.admin_level && entry.Value == PropertyValue.two)
             {
                 foundLevel = true;
             }
