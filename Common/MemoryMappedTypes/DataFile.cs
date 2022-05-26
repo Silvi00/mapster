@@ -24,7 +24,7 @@ public readonly ref struct MapFeatureData
     public GeometryType Type { get; init; }
     public ReadOnlySpan<char> Label { get; init; }
     public ReadOnlySpan<Coordinate> Coordinates { get; init; }
-    public Dictionary<string, string> Properties { get; init; }
+    public Dictionary<MapElement, PropertyValue> Properties { get; init; }
 }
 
 /// <summary>
@@ -112,10 +112,7 @@ public unsafe class DataFile : IDisposable
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private MapFeature* GetFeature(int i, ulong offset)
-    {
-        return (MapFeature*)(_ptr + offset + TileBlockHeaderSizeInBytes + i * MapFeatureSizeInBytes);
-    }
+    private MapFeature* GetFeature(int i, ulong offset) => (MapFeature*)(_ptr + offset + TileBlockHeaderSizeInBytes + (i * MapFeatureSizeInBytes));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private ReadOnlySpan<Coordinate> GetCoordinates(ulong coordinateOffset, int ithCoordinate, int coordinateCount)
@@ -141,6 +138,22 @@ public unsafe class DataFile : IDisposable
         GetString(stringsOffset, charsOffset, i, out key);
         GetString(stringsOffset, charsOffset, i + 1, out value);
     }
+
+    public static string[] MapElementList =
+    {
+        "highway",
+        "water",
+        "railway",
+        "natural",
+        "boundary",
+        "landuse",
+        "building",
+        "leisure",
+        "amenity",
+        "name",
+        "place",
+        "admin_level"
+    };
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void ForeachFeature(BoundingBox b, MapFeatureDelegate? action)
@@ -181,11 +194,19 @@ public unsafe class DataFile : IDisposable
 
                 if (isFeatureInBBox)
                 {
-                    var properties = new Dictionary<string, string>(feature->PropertyCount);
+                    var properties = new Dictionary<MapElement, PropertyValue>(feature->PropertyCount);
                     for (var p = 0; p < feature->PropertyCount; ++p)
                     {
                         GetProperty(header.Tile.Value.StringsOffsetInBytes, header.Tile.Value.CharactersOffsetInBytes, p * 2 + feature->PropertiesOffset, out var key, out var value);
-                        properties.Add(key.ToString(), value.ToString());
+                        if (!MapElementList.Contains(key.ToString())) continue;
+                        try
+                        {
+                           
+                            properties.Add((MapElement)Enum.Parse(typeof(MapElement), key.ToString()), (PropertyValue)Enum.Parse(typeof(PropertyValue), key.ToString()));  
+                        } catch (Exception e)
+                        {
+                            continue;
+                        }
                     }
 
                     if (!action(new MapFeatureData
@@ -195,7 +216,7 @@ public unsafe class DataFile : IDisposable
                             Coordinates = coordinates,
                             Type = feature->GeometryType,
                             Properties = properties
-                        }))
+                    }))
                     {
                         break;
                     }
